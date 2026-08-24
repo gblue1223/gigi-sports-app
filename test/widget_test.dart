@@ -6,13 +6,13 @@ void main() {
   testWidgets('login enters the redesigned home', (tester) async {
     await tester.pumpWidget(const PiggyParkGolfApp());
 
-    expect(find.text('간편하게 시작하기'), findsOneWidget);
-    expect(find.text('카카오로 시작하기'), findsOneWidget);
+    expect(find.text('라운드를 시작해볼까요?'), findsOneWidget);
+    expect(find.text('카카오로 계속하기'), findsOneWidget);
 
-    await tester.tap(find.text('카카오로 시작하기'));
+    await tester.tap(find.text('카카오로 계속하기'));
     await tester.pumpAndSettle();
 
-    expect(find.text('안녕하세요, GIGI님'), findsOneWidget);
-    expect(find.text('빠른 메뉴'), findsOneWidget);
+    expect(find.text('GIGI님,\n좋은 라운드 준비되셨나요?'), findsOneWidget);
+    expect(find.text('바로가기'), findsOneWidget);
   });
 }

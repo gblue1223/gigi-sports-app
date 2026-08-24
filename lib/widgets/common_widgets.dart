@@ -55,14 +55,24 @@ class LogoHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      'GIGI SPORTS',
+    final color = onDark ? Colors.white : AppColors.forestDark;
+    return Text.rich(
+      TextSpan(
+        children: [
+          TextSpan(
+            text: 'GIGI',
+            style: TextStyle(fontWeight: FontWeight.w900, color: color),
+          ),
+          TextSpan(
+            text: ' SPORTS',
+            style: TextStyle(fontWeight: FontWeight.w600, color: color),
+          ),
+        ],
+      ),
       style: TextStyle(
-        fontSize: compact ? 23 : 28,
+        fontSize: compact ? 21 : 25,
         height: 1,
-        letterSpacing: 0.5,
-        fontWeight: FontWeight.w900,
-        color: onDark ? Colors.white : AppColors.forestDark,
+        letterSpacing: 1.1,
       ),
     );
   }
