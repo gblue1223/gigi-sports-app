@@ -143,46 +143,140 @@ class _BookingPageState extends State<BookingPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('매장 목록',
-            style: TextStyle(
-                fontWeight: FontWeight.w900, color: AppColors.forestDark)),
-        centerTitle: true,
-        backgroundColor: Colors.white,
-      ),
       backgroundColor: AppColors.surface,
-      body: Column(
-        children: [
-          Container(
-            color: Colors.white,
-            child: TabBar(
-              controller: tabController,
-              labelColor: AppColors.primaryDark,
-              unselectedLabelColor: AppColors.muted,
-              indicatorColor: AppColors.primary,
-              indicatorWeight: 3.0,
-              labelStyle:
-                  const TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
-              tabs: const [Tab(text: '매장 목록'), Tab(text: '지도 보기')],
-            ),
-          ),
-          Expanded(
-            child: TabBarView(
-              controller: tabController,
-              children: [
-                StoreListView(
-                  stores: stores,
-                  onToggleFavorite: _toggleFavorite,
+      body: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(18, 12, 18, 8),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 920),
+                  child: _BookingHeader(
+                    controller: tabController,
+                    canPop: Navigator.of(context).canPop(),
+                  ),
                 ),
-                StoreMapView(
-                  stores: stores,
-                  onToggleFavorite: _toggleFavorite,
-                ),
-              ],
+              ),
             ),
-          ),
-        ],
+            Expanded(
+              child: TabBarView(
+                controller: tabController,
+                children: [
+                  StoreListView(
+                    stores: stores,
+                    onToggleFavorite: _toggleFavorite,
+                  ),
+                  StoreMapView(
+                    stores: stores,
+                    onToggleFavorite: _toggleFavorite,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
+    );
+  }
+}
+
+class _BookingHeader extends StatelessWidget {
+  const _BookingHeader({required this.controller, required this.canPop});
+
+  final TabController controller;
+  final bool canPop;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        SizedBox(
+          height: 48,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              const Text(
+                '매장 예약',
+                style: TextStyle(
+                  color: AppColors.forestDark,
+                  fontSize: 21,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -0.5,
+                ),
+              ),
+              if (canPop)
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: IconButton(
+                    tooltip: '뒤로',
+                    onPressed: () => Navigator.of(context).maybePop(),
+                    icon: const Icon(Icons.arrow_back_rounded),
+                  ),
+                ),
+              Align(
+                alignment: Alignment.centerRight,
+                child: IconButton(
+                  tooltip: '내 예약',
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('예약 내역을 준비하고 있습니다.')),
+                    );
+                  },
+                  icon: const Icon(Icons.event_note_outlined),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          height: 48,
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: AppColors.creamDark,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.line),
+          ),
+          child: TabBar(
+            controller: controller,
+            indicatorSize: TabBarIndicatorSize.tab,
+            dividerColor: Colors.transparent,
+            indicator: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            labelColor: AppColors.forestDark,
+            unselectedLabelColor: AppColors.muted,
+            labelStyle:
+                const TextStyle(fontSize: 13, fontWeight: FontWeight.w900),
+            unselectedLabelStyle:
+                const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+            tabs: const [
+              Tab(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.view_agenda_outlined, size: 17),
+                    SizedBox(width: 7),
+                    Text('매장 목록'),
+                  ],
+                ),
+              ),
+              Tab(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.map_outlined, size: 17),
+                    SizedBox(width: 7),
+                    Text('지도 보기'),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
@@ -232,127 +326,170 @@ class _StoreListViewState extends State<StoreListView> {
   @override
   Widget build(BuildContext context) {
     final displayList = filteredStores;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isWide = constraints.maxWidth >= 760;
+        final horizontal = isWide ? 28.0 : 18.0;
 
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
-      children: [
-        // Search Bar
-        Row(
+        return ListView(
+          padding: EdgeInsets.fromLTRB(horizontal, 12, horizontal, 32),
           children: [
-            Expanded(
-              child: TextField(
-                controller: searchController,
-                onChanged: (val) => setState(() => searchQuery = val),
-                decoration: InputDecoration(
-                  hintText: '매장 이름 또는 지역 검색',
-                  hintStyle:
-                      const TextStyle(fontSize: 15, color: AppColors.muted),
-                  filled: true,
-                  fillColor: Colors.white,
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-                  prefixIcon: const Icon(Icons.search,
-                      color: AppColors.primary, size: 22),
-                  suffixIcon: searchQuery.isNotEmpty
-                      ? IconButton(
-                          icon: const Icon(Icons.clear,
-                              size: 20, color: AppColors.muted),
-                          onPressed: () {
-                            searchController.clear();
-                            setState(() => searchQuery = '');
-                          },
-                        )
-                      : null,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(color: AppColors.line),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(color: AppColors.line),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide:
-                        const BorderSide(color: AppColors.primary, width: 2),
-                  ),
+            Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 920),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TextField(
+                      controller: searchController,
+                      onChanged: (val) => setState(() => searchQuery = val),
+                      decoration: InputDecoration(
+                        hintText: '지역이나 매장 이름을 검색하세요',
+                        prefixIcon: const Icon(Icons.search_rounded,
+                            color: AppColors.primaryDark),
+                        suffixIcon: searchQuery.isNotEmpty
+                            ? IconButton(
+                                tooltip: '검색어 지우기',
+                                icon: const Icon(Icons.close_rounded,
+                                    size: 19, color: AppColors.muted),
+                                onPressed: () {
+                                  searchController.clear();
+                                  setState(() => searchQuery = '');
+                                },
+                              )
+                            : null,
+                      ),
+                    ),
+                    const SizedBox(height: 13),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          FilterPill(
+                            label: '전체 ${widget.stores.length}',
+                            selected: selectedFilterIndex == 0,
+                            onTap: () =>
+                                setState(() => selectedFilterIndex = 0),
+                          ),
+                          const SizedBox(width: 8),
+                          FilterPill(
+                            label:
+                                '방문 매장 ${widget.stores.where((s) => s.isVisited).length}',
+                            selected: selectedFilterIndex == 1,
+                            onTap: () =>
+                                setState(() => selectedFilterIndex = 1),
+                          ),
+                          const SizedBox(width: 8),
+                          FilterPill(
+                            label:
+                                '즐겨찾기 ${widget.stores.where((s) => s.isFavorite).length}',
+                            selected: selectedFilterIndex == 2,
+                            onTap: () =>
+                                setState(() => selectedFilterIndex = 2),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 22),
+                    Row(
+                      children: [
+                        const Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('가까운 GIGI 매장',
+                                  style: TextStyle(
+                                      color: AppColors.forestDark,
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: -0.5)),
+                              SizedBox(height: 3),
+                              Text('원하는 매장에서 바로 라운드를 예약하세요.',
+                                  style: TextStyle(
+                                      color: AppColors.muted,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600)),
+                            ],
+                          ),
+                        ),
+                        Text('${displayList.length}개 매장',
+                            style: const TextStyle(
+                                color: AppColors.primaryDark,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w900)),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    if (displayList.isEmpty)
+                      _EmptyStoreState(filterIndex: selectedFilterIndex)
+                    else
+                      GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: displayList.length,
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: isWide ? 2 : 1,
+                          crossAxisSpacing: 14,
+                          mainAxisSpacing: 14,
+                          mainAxisExtent: isWide ? 285 : 275,
+                        ),
+                        itemBuilder: (context, index) {
+                          final store = displayList[index];
+                          return StoreCard(
+                            store: store,
+                            onToggleFavorite: () =>
+                                widget.onToggleFavorite(store),
+                          );
+                        },
+                      ),
+                  ],
                 ),
               ),
             ),
           ],
-        ),
-        const SizedBox(height: 16),
+        );
+      },
+    );
+  }
+}
 
-        // Filter Pills Row
-        Row(
+class _EmptyStoreState extends StatelessWidget {
+  const _EmptyStoreState({required this.filterIndex});
+
+  final int filterIndex;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 34),
+        child: Column(
           children: [
-            FilterPill(
-              label: '전체 (${widget.stores.length})',
-              selected: selectedFilterIndex == 0,
-              onTap: () => setState(() => selectedFilterIndex = 0),
+            Container(
+              padding: const EdgeInsets.all(15),
+              decoration: const BoxDecoration(
+                  color: AppColors.mintSoft, shape: BoxShape.circle),
+              child: const Icon(Icons.storefront_outlined,
+                  size: 34, color: AppColors.primaryDark),
             ),
-            const SizedBox(width: 8),
-            FilterPill(
-              label:
-                  '방문 매장 (${widget.stores.where((s) => s.isVisited).length})',
-              selected: selectedFilterIndex == 1,
-              onTap: () => setState(() => selectedFilterIndex = 1),
+            const SizedBox(height: 14),
+            Text(
+              filterIndex == 2
+                  ? '즐겨찾는 매장이 없습니다.'
+                  : filterIndex == 1
+                      ? '방문한 매장 내역이 없습니다.'
+                      : '검색 결과와 일치하는 매장이 없습니다.',
+              style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w900,
+                  color: AppColors.forestDark),
             ),
-            const SizedBox(width: 8),
-            FilterPill(
-              label:
-                  '즐겨찾기 (${widget.stores.where((s) => s.isFavorite).length})',
-              selected: selectedFilterIndex == 2,
-              onTap: () => setState(() => selectedFilterIndex = 2),
-            ),
+            const SizedBox(height: 5),
+            const Text('필터를 바꾸거나 다른 지역을 검색해 보세요.',
+                style: TextStyle(fontSize: 12, color: AppColors.muted)),
           ],
         ),
-        const SizedBox(height: 20),
-
-        // List View or Empty State
-        if (displayList.isEmpty)
-          Container(
-            padding: const EdgeInsets.all(40),
-            alignment: Alignment.center,
-            child: Column(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: const BoxDecoration(
-                      color: AppColors.mintSoft, shape: BoxShape.circle),
-                  child: const Icon(Icons.storefront,
-                      size: 40, color: AppColors.primary),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  selectedFilterIndex == 2
-                      ? '즐겨찾는 매장이 없습니다.'
-                      : selectedFilterIndex == 1
-                          ? '방문한 매장 내역이 없습니다.'
-                          : '검색 결과와 일치하는 매장이 없습니다.',
-                  style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.forestDark),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  selectedFilterIndex == 2
-                      ? '하트 아이콘을 눌러 매장을 즐겨찾기에 추가해보세요!'
-                      : '다른 검색어를 입력해 보세요.',
-                  style: const TextStyle(fontSize: 13, color: AppColors.muted),
-                ),
-              ],
-            ),
-          )
-        else
-          ...displayList.map((store) {
-            return StoreCard(
-              store: store,
-              onToggleFavorite: () => widget.onToggleFavorite(store),
-            );
-          }),
-      ],
+      ),
     );
   }
 }
@@ -371,24 +508,20 @@ class FilterPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: OutlinedButton(
-        onPressed: onTap,
-        style: OutlinedButton.styleFrom(
-          backgroundColor: selected ? AppColors.primary : Colors.white,
-          foregroundColor: selected ? Colors.white : AppColors.forestDark,
-          side:
-              BorderSide(color: selected ? AppColors.primary : AppColors.line),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 2),
-          elevation: selected ? 2 : 0,
-        ),
-        child: Text(
-          label,
-          maxLines: 1,
-          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800),
-        ),
+    return OutlinedButton(
+      onPressed: onTap,
+      style: OutlinedButton.styleFrom(
+        minimumSize: const Size(0, 40),
+        backgroundColor: selected ? AppColors.forestDark : Colors.white,
+        foregroundColor: selected ? Colors.white : AppColors.forestDark,
+        side:
+            BorderSide(color: selected ? AppColors.forestDark : AppColors.line),
+        padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 16),
+      ),
+      child: Text(
+        label,
+        maxLines: 1,
+        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
       ),
     );
   }
@@ -406,132 +539,137 @@ class StoreCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 18),
-      child: AppCard(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: AppColors.mintSoft,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                        color: AppColors.mint.withValues(alpha: 0.4)),
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.circle, size: 8, color: AppColors.primary),
-                      SizedBox(width: 6),
-                      Text('영업중',
-                          style: TextStyle(
-                              color: AppColors.primaryDark,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w900)),
-                    ],
-                  ),
+    return AppCard(
+      padding: const EdgeInsets.all(17),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.mintSoft,
+                  borderRadius: BorderRadius.circular(999),
                 ),
-                if (store.isVisited) ...[
-                  const SizedBox(width: 6),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFEF3C7),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Text('방문함',
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.circle, size: 7, color: AppColors.primary),
+                    SizedBox(width: 5),
+                    Text('영업중',
                         style: TextStyle(
-                            color: Color(0xFFD97706),
-                            fontSize: 12,
-                            fontWeight: FontWeight.w800)),
-                  ),
-                ],
-                const Spacer(),
-                IconButton(
+                            color: AppColors.primaryDark,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w900)),
+                  ],
+                ),
+              ),
+              if (store.isVisited) ...[
+                const SizedBox(width: 6),
+                const Text('방문 매장',
+                    style: TextStyle(
+                        color: AppColors.yellow,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w900)),
+              ],
+              const Spacer(),
+              SizedBox(
+                width: 36,
+                height: 36,
+                child: IconButton(
+                  tooltip: '즐겨찾기',
+                  padding: EdgeInsets.zero,
                   onPressed: onToggleFavorite,
                   icon: Icon(
-                    store.isFavorite ? Icons.favorite : Icons.favorite_border,
-                    size: 26,
+                    store.isFavorite
+                        ? Icons.favorite_rounded
+                        : Icons.favorite_border_rounded,
+                    size: 21,
                     color: store.isFavorite
                         ? const Color(0xFFEF4444)
-                        : AppColors.muted,
+                        : AppColors.subtle,
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              store.name,
-              style: const TextStyle(
-                  fontSize: 20,
-                  color: AppColors.forestDark,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: -0.3),
-            ),
-            const SizedBox(height: 6),
-            Row(
-              children: [
-                const Icon(Icons.star_rounded,
-                    color: Color(0xFFF59E0B), size: 18),
-                const SizedBox(width: 4),
-                Text('${store.rating}',
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            store.name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+                fontSize: 18,
+                color: AppColors.forestDark,
+                fontWeight: FontWeight.w900,
+                letterSpacing: -0.4),
+          ),
+          const SizedBox(height: 5),
+          Row(
+            children: [
+              const Icon(Icons.star_rounded,
+                  color: Color(0xFFF59E0B), size: 17),
+              const SizedBox(width: 3),
+              Text('${store.rating}',
+                  style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.forestDark)),
+              const SizedBox(width: 4),
+              Text('리뷰 ${store.reviewCount}',
+                  style: const TextStyle(fontSize: 11, color: AppColors.muted)),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.cream,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text('예약 가능 ${store.slots}석',
                     style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w900,
-                        color: AppColors.forestDark)),
-                const SizedBox(width: 4),
-                Text('(${store.reviewCount}개 평가)',
-                    style:
-                        const TextStyle(fontSize: 13, color: AppColors.muted)),
-              ],
-            ),
-            const SizedBox(height: 10),
-            const Divider(height: 1, color: AppColors.line),
-            const SizedBox(height: 12),
-            StoreInfoLine(
-                icon: Icons.location_on_outlined, text: store.address),
-            StoreInfoLine(icon: Icons.schedule_outlined, text: store.hours),
-            StoreInfoLine(
-                icon: Icons.flag_outlined, text: '${store.slots}석 보유 (예약 가능)'),
-            const SizedBox(height: 14),
-            Row(
-              children: [
-                StoreActionButton(
-                  icon: Icons.calendar_month_outlined,
-                  label: '예약하기',
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => StoreReservationPage(
-                          storeName: store.name,
-                          address: store.address,
-                        ),
+                        color: AppColors.primaryDark,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w900)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 13),
+          StoreInfoLine(icon: Icons.location_on_outlined, text: store.address),
+          StoreInfoLine(icon: Icons.schedule_outlined, text: store.hours),
+          const Spacer(),
+          Row(
+            children: [
+              StoreActionButton(
+                icon: Icons.calendar_month_outlined,
+                label: '예약하기',
+                primary: true,
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => StoreReservationPage(
+                        storeName: store.name,
+                        address: store.address,
                       ),
-                    );
-                  },
-                ),
-                const SizedBox(width: 8),
-                StoreActionButton(
-                  icon: Icons.phone_outlined,
-                  label: '전화하기',
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                          content:
-                              Text('${store.name} (02-1234-5678) 전화 연결 중...')),
-                    );
-                  },
-                ),
-              ],
-            ),
-          ],
-        ),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(width: 8),
+              StoreActionButton(
+                icon: Icons.phone_outlined,
+                label: '전화',
+                onPressed: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                        content:
+                            Text('${store.name} (02-1234-5678) 전화 연결 중...')),
+                  );
+                },
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -550,13 +688,14 @@ class StoreInfoLine extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: AppColors.primary, size: 18),
-          const SizedBox(width: 10),
+          Icon(icon, color: AppColors.primaryDark, size: 16),
+          const SizedBox(width: 8),
           Expanded(
             child: Text(
               text,
-              style: const TextStyle(
-                  fontSize: 13.5, color: AppColors.ink, height: 1.35),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 12, color: AppColors.muted),
             ),
           ),
         ],
@@ -569,12 +708,14 @@ class StoreActionButton extends StatelessWidget {
   const StoreActionButton({
     required this.icon,
     required this.label,
+    this.primary = false,
     this.onPressed,
     super.key,
   });
 
   final IconData icon;
   final String label;
+  final bool primary;
   final VoidCallback? onPressed;
 
   @override
@@ -587,12 +728,13 @@ class StoreActionButton extends StatelessWidget {
             maxLines: 1,
             style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800)),
         style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.primaryDark,
-          backgroundColor: AppColors.mintLight,
-          side: const BorderSide(color: AppColors.mintSoft),
+          minimumSize: const Size(0, 42),
+          foregroundColor: primary ? Colors.white : AppColors.forestDark,
+          backgroundColor: primary ? AppColors.primary : Colors.white,
+          side: BorderSide(color: primary ? AppColors.primary : AppColors.line),
           shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 2),
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 2),
         ),
       ),
     );
@@ -737,87 +879,101 @@ class _StoreMapViewState extends State<StoreMapView> {
   @override
   Widget build(BuildContext context) {
     final displayMapStores = mapFilteredStores;
-    final size = MediaQuery.of(context).size;
 
-    return Stack(
-      children: [
-        Positioned.fill(child: CustomPaint(painter: MapPainter())),
-        Positioned(
-          left: 20,
-          right: 20,
-          top: 16,
-          child: Container(
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(18, 12, 18, 24),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 920),
+          child: DecoratedBox(
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: AppColors.line),
               boxShadow: const [
                 BoxShadow(
-                    color: Color(0x1F059669),
-                    blurRadius: 12,
-                    offset: Offset(0, 4))
+                    color: Color(0x1415140F),
+                    blurRadius: 24,
+                    offset: Offset(0, 8)),
               ],
             ),
-            child: TextField(
-              onChanged: (val) => setState(() => searchMapQuery = val),
-              decoration: const InputDecoration(
-                hintText: '지도에서 매장 이름 검색',
-                hintStyle: TextStyle(fontSize: 14, color: AppColors.muted),
-                prefixIcon: Icon(Icons.map_outlined, color: AppColors.primary),
-                border: InputBorder.none,
-                contentPadding:
-                    EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(24),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final size = constraints.biggest;
+                  return Stack(
+                    children: [
+                      Positioned.fill(
+                          child: CustomPaint(painter: MapPainter())),
+                      Positioned(
+                        left: 16,
+                        right: 16,
+                        top: 16,
+                        child: TextField(
+                          onChanged: (val) =>
+                              setState(() => searchMapQuery = val),
+                          decoration: const InputDecoration(
+                            hintText: '지도에서 매장 이름 검색',
+                            prefixIcon: Icon(Icons.search_rounded,
+                                color: AppColors.primaryDark),
+                          ),
+                        ),
+                      ),
+                      ...displayMapStores.map((store) {
+                        final left = (size.width - 100) * store.leftOffsetRatio;
+                        final top =
+                            (size.height - 210) * store.topOffsetRatio + 82;
+                        return Positioned(
+                          left: left.clamp(8, size.width - 95),
+                          top: top.clamp(86, size.height - 100),
+                          child: InkWell(
+                            onTap: () => _showStoreBottomSheet(context, store),
+                            borderRadius: BorderRadius.circular(14),
+                            child: Column(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.forestDark,
+                                    borderRadius: BorderRadius.circular(10),
+                                    boxShadow: const [
+                                      BoxShadow(
+                                          color: Colors.black26, blurRadius: 6),
+                                    ],
+                                  ),
+                                  child: Text(
+                                    store.name.replaceAll('GIGI Sports ', ''),
+                                    style: const TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w900,
+                                        color: Colors.white),
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                const MapFlag(),
+                              ],
+                            ),
+                          ),
+                        );
+                      }),
+                      Positioned(
+                        left: 0,
+                        right: 0,
+                        bottom: 18,
+                        child: Center(
+                          child: MapCountBadge(count: displayMapStores.length),
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
             ),
           ),
         ),
-
-        // Interactive Map Flags
-        ...displayMapStores.map((store) {
-          final left = (size.width - 60) * store.leftOffsetRatio;
-          final top = (size.height - 200) * store.topOffsetRatio + 50;
-          return Positioned(
-            left: left,
-            top: top,
-            child: InkWell(
-              onTap: () => _showStoreBottomSheet(context, store),
-              borderRadius: BorderRadius.circular(20),
-              child: Column(
-                children: [
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: AppColors.forestDark,
-                      borderRadius: BorderRadius.circular(10),
-                      boxShadow: const [
-                        BoxShadow(color: Colors.black26, blurRadius: 6)
-                      ],
-                    ),
-                    child: Text(
-                      store.name.replaceAll('GIGI Sports ', ''),
-                      style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w900,
-                          color: Colors.white),
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  const MapFlag(),
-                ],
-              ),
-            ),
-          );
-        }),
-
-        Positioned(
-          left: 0,
-          right: 0,
-          bottom: 24,
-          child: Center(
-            child: MapCountBadge(count: displayMapStores.length),
-          ),
-        ),
-      ],
+      ),
     );
   }
 }
